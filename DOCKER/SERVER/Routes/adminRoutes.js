@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { verify } from 'jsonwebtoken';
 // import { reservation,user,Message } from './adminroutes.js';
 import { verifyToken } from "../middleware/authmiddleware.js";
 import dotenv from 'dotenv';
@@ -261,7 +261,10 @@ adminroute.get('/allreservations', async (req, res) => {
 });
 
 //add dish to menu
-adminroute.post('/adddish',async(req,res)=>{
+adminroute.post('/adddish', verifyToken, async(req,res)=>{
+    const role=req.userType;
+   if(role=="admin")
+   {
     const menuD=req.body;
     const{dishname,description,price}=menuD;
     const existingmenu=await menu.findOne({dishname:dishname})
@@ -281,11 +284,15 @@ adminroute.post('/adddish',async(req,res)=>{
                 res.send(" new dish added successfully ");
                 res.status(200).json(); 
         }
-
+   }
+ else {
+    res.status(404).json("you don't have permission");
+ }
 })
 
 //update dish
-adminroute.put('/menu', async (req, res) => {
+adminroute.put('/menu',verifyToken, async (req, res) => {
+  
     const menuD = req.body;
     const { dishname, description, price } = menuD;
 
@@ -307,10 +314,14 @@ adminroute.put('/menu', async (req, res) => {
         res.status(500).json({ message: "Error updating dish", error: error.message });
         console.error("Error updating dish:", error);
     }
+ 
 });
 
 // Update a specific dish by its name
-adminroute.put('/updatemenu/:dishname', async (req, res) => {
+adminroute.put('/updatemenu/:dishname', verifyToken,async (req, res) => {
+    const role=req.userType;
+    if(role=="admin")
+   {
     const { dishname } = req.params; // Get the dishname from the URL parameter
     const updatedData = req.body; // The updated dish data from the frontend
     try {
@@ -326,6 +337,10 @@ adminroute.put('/updatemenu/:dishname', async (req, res) => {
     } catch (error) {
       res.status(500).json({ message: 'Error updating dish', error: error.message });
     }
+}
+else {
+ res.status(404).json("you don't have permission")
+}
   });
   
   
@@ -363,7 +378,10 @@ adminroute.post('/message', async (req, res) => {
 
 
 //view message
-adminroute.get('/viewmessage',async(req,res)=>{
+adminroute.get('/viewmessage',verifyToken,async(req,res)=>{
+    const role=req.userType;
+    if(role=="admin")
+   {
     const email=req.query.email;
     const existing=await Message.findOne({email})
     if(existing){
@@ -377,6 +395,10 @@ adminroute.get('/viewmessage',async(req,res)=>{
         res.send('you have signup first!');
         console.log('you have signup first !');
     }
+}
+else {
+ res.status(404).json("you don't have permission")
+}
 });
 
 //view all dishes
@@ -406,17 +428,27 @@ adminroute.get('/allmenu/:dishname', async (req, res) => {
 });
 
 //MESSAGES
-adminroute.get('/allmessages', async (req, res) => {
+adminroute.get('/allmessages',verifyToken ,async (req, res) => {
+    const role=req.userType;
+    if(role=="admin")
+   {
     try {
         const fullmessages = await Message.find(); // Fetch all reservations
         res.status(200).json(fullmessages); // Return all reservation data in JSON format
     } catch (error) {
         res.status(500).json({ message: 'Error retrieving reservations', error: error.message });
     }
+}
+else {
+ res.status(404).json("you don't have permission")
+}
 });
 
 //delete dish
-adminroute.delete('/deletemenu', async (req, res) => {
+adminroute.delete('/deletemenu',verifyToken, async (req, res) => {
+    const role=req.userType;
+    if(role=="admin")
+   {
     try {
         const { dishname } = req.query;
 
@@ -431,6 +463,10 @@ adminroute.delete('/deletemenu', async (req, res) => {
         console.error("Error deleting dish:", error);
         res.status(500).send("Server error. Please try again later.");
     }
+}
+else {
+ res.status(404).json("you don't have permission")
+}
 });
 
 adminroute.get('/logout', (req, res) => {
